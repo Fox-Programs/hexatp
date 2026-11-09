@@ -1,0 +1,19 @@
+{
+  "name": "hexatp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Mini-depot DDD / archi hexagonale : swipe, quota et abonnement",
+  "scripts": {
+    "build": "tsc",
+    "demo": "tsx src/demo/main.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}
