@@ -1,0 +1,107 @@
+
+@startuml
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+
+package "Domaine métier" {
+
+  class Interaction <<Aggregate Root>> {
+    -id: InteractionId
+    -participantAId: UtilisateurId
+    -participantBId: UtilisateurId
+    -statut: StatutInteraction
+    +enregistrerDecision(decision: DecisionSwipe)
+    +determinerResultat()
+  }
+
+  class DecisionSwipe <<Value Object>> {
+    +emetteurId: UtilisateurId
+    +decision: Decision
+    +dateDecision: Date
+  }
+
+  enum StatutInteraction {
+    PENDING
+    NO_MATCH
+    MATCHED
+  }
+
+  enum Decision {
+    OUI
+    NON
+  }
+
+  class CompteurSwipe <<Aggregate Root>> {
+    -utilisateurId: UtilisateurId
+    -dateDebutPeriode: Date
+    -dateFinPeriode: Date
+    -decisionsEmises: int
+    +enregistrerDecision()
+  }
+
+  class Abonnement <<Aggregate Root>> {
+    -id: AbonnementId
+    -utilisateurId: UtilisateurId
+    -dateDebut: Date
+    -dateFin: Date
+    -statut: StatutAbonnement
+    +estActif(aLaDate: Date): boolean
+  }
+
+  enum StatutAbonnement {
+    ACTIF
+    SUSPENDU
+    RESILIE
+    EXPIRE
+  }
+
+  class QuotaSwipe <<Domain Policy>> {
+    -limiteGratuite: int
+    -dureePeriode: Duration
+    +verifierQuota(compteur, abonnement)
+  }
+
+  class PolitiqueExposition <<Domain Policy>> {
+    +verifierDelaiAvantNouvelleExposition(...)
+  }
+
+  Interaction "1" *-- "1..2" DecisionSwipe
+  Interaction --> StatutInteraction
+  DecisionSwipe --> Decision
+
+  QuotaSwipe ..> CompteurSwipe
+  QuotaSwipe ..> Abonnement
+}
+
+package "Application" {
+
+  class ServiceDecouverte <<Application Service>> {
+    +rechercherProfils()
+    +filtrerProfils()
+    +prioriserInteractionsEnAttente()
+  }
+
+  interface InteractionRepository <<Port>> {
+    +trouverOuCreer(...)
+    +sauvegarder(interaction)
+  }
+
+  interface CompteurSwipeRepository <<Port>> {
+    +obtenirPourUtilisateur(...)
+    +sauvegarder(compteur)
+  }
+
+  interface AbonnementRepository <<Port>> {
+    +obtenirActif(...)
+  }
+
+  ServiceDecouverte ..> InteractionRepository
+  ServiceDecouverte ..> CompteurSwipeRepository
+  ServiceDecouverte ..> AbonnementRepository
+  ServiceDecouverte ..> QuotaSwipe
+  ServiceDecouverte ..> PolitiqueExposition
+}
+
+@enduml
+
+
