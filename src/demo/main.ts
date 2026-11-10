@@ -4,9 +4,12 @@ import { QuotaSwipe } from '../domain/quota-swipe.js';
 import { PolitiqueExposition } from '../domain/politique-exposition.js';
 import { PolitiqueRewind } from '../domain/politique-rewind.js';
 import { ServiceDecouverte } from '../application/service-decouverte.js';
+import { NotificationHandler } from '../application/handlers/notification-handler.js';
 import { InMemoryInteractionRepository } from '../infrastructure/in-memory-interaction-repository.js';
 import { InMemoryCompteurSwipeRepository } from '../infrastructure/in-memory-compteur-swipe-repository.js';
 import { InMemoryAbonnementRepository } from '../infrastructure/in-memory-abonnement-repository.js';
+import { EventBus } from '../infrastructure/event-bus.js';
+import { MatchProduit } from '../domain/events/match-produit.js';
 
 /**
  * Point d'entrée de démonstration : câble le domaine, l'application et
@@ -20,6 +23,12 @@ async function main(): Promise<void> {
   const quota = new QuotaSwipe(3, 24 * 60 * 60 * 1000); // 3 swipes gratuits / 24h
   const exposition = new PolitiqueExposition(60 * 60 * 1000); // 1h entre expositions
   const rewind = new PolitiqueRewind();
+  const bus = new EventBus();
+  const notificationHandler = new NotificationHandler();
+
+  bus.souscrire<MatchProduit>('MatchProduit', (evenement) =>
+    notificationHandler.handle(evenement),
+  );
 
   const service = new ServiceDecouverte(
     interactions,
@@ -28,6 +37,7 @@ async function main(): Promise<void> {
     quota,
     exposition,
     rewind,
+    bus,
   );
 
   const alice = UtilisateurId('alice');

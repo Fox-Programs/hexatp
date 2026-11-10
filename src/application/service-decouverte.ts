@@ -7,6 +7,7 @@ import type { PolitiqueRewind } from '../domain/politique-rewind.js';
 import type { InteractionRepository } from './ports/interaction-repository.js';
 import type { CompteurSwipeRepository } from './ports/compteur-swipe-repository.js';
 import type { AbonnementRepository } from './ports/abonnement-repository.js';
+import type { EventBus } from '../infrastructure/event-bus.js';
 
 /** Profil candidat renvoyé par la découverte. */
 export interface Profil {
@@ -28,6 +29,7 @@ export class ServiceDecouverte {
     private readonly quota: QuotaSwipe,
     private readonly exposition: PolitiqueExposition,
     private readonly rewind: PolitiqueRewind,
+    private readonly bus: EventBus,
   ) {}
 
   /**
@@ -84,6 +86,11 @@ export class ServiceDecouverte {
 
     await this.interactions.sauvegarder(interaction);
     await this.compteurs.sauvegarder(compteur);
+
+    // Processus : les effets secondaires ne sont déclenchés qu'après les sauvegardes.
+    for (const evenement of interaction.collecterEvenements()) {
+      await this.bus.publier(evenement);
+    }
 
     return interaction.getStatut();
   }

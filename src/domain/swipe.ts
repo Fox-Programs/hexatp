@@ -1,5 +1,7 @@
 import type { InteractionId, UtilisateurId } from './ids.js';
 import { Decision, DecisionSwipe } from './decision.js';
+import type { DomainEvent } from './events/domain-event.js';
+import { MatchProduit } from './events/match-produit.js';
 
 /** Statut d'une interaction entre deux participants. */
 export enum StatutInteraction {
@@ -14,6 +16,7 @@ export enum StatutInteraction {
  */
 export class Swipe {
   private readonly decisions: DecisionSwipe[] = [];
+  private readonly evenements: DomainEvent[] = [];
   private statut: StatutInteraction = StatutInteraction.PENDING;
 
   constructor(
@@ -81,17 +84,36 @@ export class Swipe {
    *  - Deux OUI (un de chaque participant) => MATCHED.
    */
   determinerResultat(): StatutInteraction {
+    const ancienStatut = this.statut;
     const aUnNon = this.decisions.some((d) => d.decision === Decision.NON);
     if (aUnNon) {
       this.statut = StatutInteraction.NO_MATCH;
-      return this.statut;
+    } else {
+      const ouiDistincts = new Set(
+        this.decisions.filter((d) => d.decision === Decision.OUI).map((d) => d.emetteurId),
+      );
+      this.statut =
+        ouiDistincts.size === 2 ? StatutInteraction.MATCHED : StatutInteraction.PENDING;
     }
 
-    const ouiDistincts = new Set(
-      this.decisions.filter((d) => d.decision === Decision.OUI).map((d) => d.emetteurId),
-    );
-    this.statut = ouiDistincts.size === 2 ? StatutInteraction.MATCHED : StatutInteraction.PENDING;
+    if (ancienStatut !== StatutInteraction.MATCHED && this.statut === StatutInteraction.MATCHED) {
+      this.enregistrerEvenement(
+        new MatchProduit(this.id, this.participantAId, this.participantBId),
+      );
+    }
+
     return this.statut;
+  }
+
+  /** Retourne les événements métier en attente puis vide la collection. */
+  collecterEvenements(): DomainEvent[] {
+    const evenements = [...this.evenements];
+    this.evenements.length = 0;
+    return evenements;
+  }
+
+  private enregistrerEvenement(evenement: DomainEvent): void {
+    this.evenements.push(evenement);
   }
 
   getStatut(): StatutInteraction {
