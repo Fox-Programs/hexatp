@@ -44,6 +44,36 @@ export class Swipe {
   }
 
   /**
+   * Annule la décision d'un participant.
+   * Processus :
+   *  1. Vérifie que l'émetteur appartient à l'interaction.
+   *  2. Retire sa décision si elle existe.
+   *  3. Recalcule le statut avec la règle métier existante.
+   */
+  annulerDecisionDe(emetteurId: UtilisateurId): void {
+    const estParticipant =
+      emetteurId === this.participantAId || emetteurId === this.participantBId;
+    if (!estParticipant) {
+      throw new Error('Émetteur hors de cette interaction');
+    }
+
+    const index = this.decisions.findIndex((decision) => decision.emetteurId === emetteurId);
+    if (index === -1) {
+      return;
+    }
+
+    this.decisions.splice(index, 1);
+    this.determinerResultat();
+  }
+
+  /** Expose la décision datée sans rendre la collection interne publique. */
+  derniereDecisionDe(emetteurId: UtilisateurId): DecisionSwipe | null {
+    return (
+      this.decisions.find((decision) => decision.emetteurId === emetteurId) ?? null
+    );
+  }
+
+  /**
    * Détermine le résultat de l'interaction.
    * Processus :
    *  - Un seul OUI et pas encore de réponse adverse => reste PENDING.
